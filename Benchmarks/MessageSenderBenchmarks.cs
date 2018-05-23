@@ -11,7 +11,8 @@
     using Microsoft.Azure.ServiceBus;
     using Microsoft.Azure.ServiceBus.Core;
 
-    [SimpleJob(RunStrategy.ColdStart)]
+//    [SimpleJob(RunStrategy.ColdStart)]
+    [CoreJob, ClrJob]
     public class MessageSenderBenchmarks
     {
         MessageSender[] senders;
