@@ -11,21 +11,23 @@
 
     public class SendingMessages
     {
+        const string queuePath = "test-non-partitioned"; //"test-partitioned"
         static readonly Message TestMessage1K = Create1KMessage();
 
         public static async Task Main()
         {
             var connectionString = Environment.GetEnvironmentVariable("AzureServiceBus.ConnectionString");
 
-            var numberOfMessages = 5000;
+            var numberOfMessages = 10000;
 
-            Console.WriteLine($"Sending {numberOfMessages} mesasges");
+            Console.WriteLine($"Sending {numberOfMessages} messages");
             
             await SendUsingSingleSender(connectionString, numberOfMessages);
 
-            await SendUsingMultipleSendersCreatedWithConnectionString(connectionString, numberOfSenders:2, totalNumberOfMessages:numberOfMessages);
+            await SendUsingMultipleSendersCreatedWithConnectionString(connectionString, numberOfSenders:10, totalNumberOfMessages:numberOfMessages);
 
-            await SendUsingMultipleSendersSharingConnection(connectionString, numberOfSenders:2, totalNumberOfMessages:numberOfMessages);
+            //~not really needed anymore
+            //~await SendUsingMultipleSendersSharingConnection(connectionString, numberOfSenders:2, totalNumberOfMessages:numberOfMessages);
 
             Console.WriteLine("All done. Press Enter to exit.");
             Console.ReadLine();
@@ -33,8 +35,6 @@
 
         static async Task SendUsingSingleSender(string connectionString, int numberOfMessages)
         {
-            const string queuePath = "test-non-partitioned";
-            
             var sender = new MessageSender(connectionString, queuePath);
 
             var stopwatch = Stopwatch.StartNew();
@@ -54,13 +54,12 @@
        
         static async Task SendUsingMultipleSendersCreatedWithConnectionString(string connectionString, int numberOfSenders, int totalNumberOfMessages)
         {
-            const string queuePath = "test-non-partitioned";
 
             var senders = new MessageSender[numberOfSenders];
 
             for (var i = 0; i < numberOfSenders; i++)
             {
-                senders[i] = new MessageSender(connectionString, queuePath);
+                senders[i] = new MessageSender(connectionString, $"{queuePath}-{i}");
             }
 
             var numberOfMessagesToSend = totalNumberOfMessages / numberOfSenders;
@@ -81,8 +80,6 @@
 
         static async Task SendUsingMultipleSendersSharingConnection(string connectionString, int numberOfSenders, int totalNumberOfMessages)
         {
-            const string queuePath = "test-non-partitioned";
-
             var connection = new ServiceBusConnection(connectionString);
 
             var senders = new MessageSender[numberOfSenders];
