@@ -11,40 +11,40 @@
 
     public class SendingMessages
     {
-        private const int NumberOfMessages = 5000;
         static readonly Message TestMessage1K = Create1KMessage();
 
         public static async Task Main()
         {
             var connectionString = Environment.GetEnvironmentVariable("AzureServiceBus.ConnectionString");
 
-            Console.WriteLine($"Sending {NumberOfMessages} mesasges");
+            var numberOfMessages = 5000;
 
-            await SendUsingSingleSender(connectionString);
+            Console.WriteLine($"Sending {numberOfMessages} mesasges");
+            
+            await SendUsingSingleSender(connectionString, numberOfMessages);
 
-            await SendUsingMultipleSendersCreatedWithConnectionString(connectionString);
+            await SendUsingMultipleSendersCreatedWithConnectionString(connectionString, numberOfSenders:2, totalNumberOfMessages:numberOfMessages);
 
-            await SendUsingMultipleSendersSharingConnection(connectionString);
+            await SendUsingMultipleSendersSharingConnection(connectionString, numberOfSenders:2, totalNumberOfMessages:numberOfMessages);
 
             Console.WriteLine("All done. Press Enter to exit.");
             Console.ReadLine();
         }
 
-        static async Task SendUsingSingleSender(string connectionString)
+        static async Task SendUsingSingleSender(string connectionString, int numberOfMessages)
         {
             const string queuePath = "test-non-partitioned";
             
             var sender = new MessageSender(connectionString, queuePath);
 
             var stopwatch = Stopwatch.StartNew();
-            stopwatch.Start();
 
-            await Task.WhenAll(SendMessages(sender, NumberOfMessages)).ConfigureAwait(false);
+            await Task.WhenAll(SendMessages(sender, numberOfMessages)).ConfigureAwait(false);
             
             stopwatch.Stop();
 
             Console.WriteLine($"Elapsed time {stopwatch.Elapsed.TotalMilliseconds} msec");
-            Console.WriteLine($"Throughput: {NumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
+            Console.WriteLine($"Throughput: {numberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
 
             await WaitForAnyKey().ConfigureAwait(false);
 
@@ -52,59 +52,56 @@
         }
 
        
-        static async Task SendUsingMultipleSendersCreatedWithConnectionString(string connectionString)
+        static async Task SendUsingMultipleSendersCreatedWithConnectionString(string connectionString, int numberOfSenders, int totalNumberOfMessages)
         {
             const string queuePath = "test-non-partitioned";
 
-            var senders = new[]
+            var senders = new MessageSender[numberOfSenders];
+
+            for (var i = 0; i < numberOfSenders; i++)
             {
-                new MessageSender(connectionString, queuePath), 
-                new MessageSender(connectionString, queuePath), 
-                new MessageSender(connectionString, queuePath), 
-                new MessageSender(connectionString, queuePath), 
-                new MessageSender(connectionString, queuePath) 
-            };
+                senders[i] = new MessageSender(connectionString, queuePath);
+            }
+
+            var numberOfMessagesToSend = totalNumberOfMessages / numberOfSenders;
 
             var stopwatch = Stopwatch.StartNew();
-            stopwatch.Start();
-
-            await Task.WhenAll(SendMessages(senders[0]), SendMessages(senders[1]), SendMessages(senders[2]), SendMessages(senders[3]), SendMessages(senders[4])).ConfigureAwait(false);
+            
+            await Task.WhenAll(senders.Select(sender => SendMessages(sender, numberOfMessagesToSend))).ConfigureAwait(false);
 
             stopwatch.Stop();
 
             Console.WriteLine($"Elapsed time {stopwatch.Elapsed.TotalMilliseconds} msec");
-            Console.WriteLine($"Throughput: {NumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
+            Console.WriteLine($"Throughput: {totalNumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
 
             await WaitForAnyKey().ConfigureAwait(false);
 
             await CloseSenders(senders).ConfigureAwait(false);
         }
 
-        static async Task SendUsingMultipleSendersSharingConnection(string connectionString)
+        static async Task SendUsingMultipleSendersSharingConnection(string connectionString, int numberOfSenders, int totalNumberOfMessages)
         {
             const string queuePath = "test-non-partitioned";
 
             var connection = new ServiceBusConnection(connectionString);
 
-            var senders = new []
+            var senders = new MessageSender[numberOfSenders];
+
+            for (var i = 0; i < numberOfSenders; i++)
             {
-                new MessageSender(connection, queuePath), 
-                new MessageSender(connection, queuePath), 
-                new MessageSender(connection, queuePath), 
-                new MessageSender(connection, queuePath), 
-                new MessageSender(connection, queuePath) 
-            };
+                senders[i] = new MessageSender(connection, queuePath);
+            }
+
+            var numberOfMessagesToSend = totalNumberOfMessages / numberOfSenders;
 
             var stopwatch = Stopwatch.StartNew();
-            stopwatch.Start();
 
-            await Task.WhenAll(SendMessages(senders[0]), SendMessages(senders[1]), SendMessages(senders[2]), SendMessages(senders[3]), SendMessages(senders[4])).ConfigureAwait(false);
+            await Task.WhenAll(senders.Select(sender => SendMessages(sender, numberOfMessagesToSend))).ConfigureAwait(false);
 
             stopwatch.Stop();
 
-
             Console.WriteLine($"Elapsed time {stopwatch.Elapsed.TotalMilliseconds} msec");
-            Console.WriteLine($"Throughput: {NumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
+            Console.WriteLine($"Throughput: {totalNumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
 
             await WaitForAnyKey().ConfigureAwait(false);
 
