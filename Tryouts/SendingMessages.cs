@@ -17,14 +17,17 @@
         public static async Task Main()
         {
             var connectionString = Environment.GetEnvironmentVariable("AzureServiceBus.ConnectionString");
-
+            
             var numberOfMessages = 10000;
 
             Console.WriteLine($"Sending {numberOfMessages} messages");
-            
-            await SendUsingSingleSender(connectionString, numberOfMessages);
 
-            await SendUsingMultipleSendersCreatedWithConnectionString(connectionString, numberOfSenders:10, totalNumberOfMessages:numberOfMessages);
+            for (var iterations = 0; iterations < 10; iterations++)
+            {
+                Console.WriteLine($"Run #{iterations+1}");
+
+                await SendUsingMultipleSendersCreatedWithConnectionString(connectionString, numberOfSenders:10, totalNumberOfMessages:numberOfMessages);
+            }
 
             //~not really needed anymore
             //~await SendUsingMultipleSendersSharingConnection(connectionString, numberOfSenders:2, totalNumberOfMessages:numberOfMessages);
@@ -32,25 +35,6 @@
             Console.WriteLine("All done. Press Enter to exit.");
             Console.ReadLine();
         }
-
-        static async Task SendUsingSingleSender(string connectionString, int numberOfMessages)
-        {
-            var sender = new MessageSender(connectionString, queuePath);
-
-            var stopwatch = Stopwatch.StartNew();
-
-            await Task.WhenAll(SendMessages(sender, numberOfMessages)).ConfigureAwait(false);
-            
-            stopwatch.Stop();
-
-            Console.WriteLine($"Elapsed time {stopwatch.Elapsed.TotalMilliseconds} msec");
-            Console.WriteLine($"Throughput: {numberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
-
-            await WaitForAnyKey().ConfigureAwait(false);
-
-            await CloseSenders(sender).ConfigureAwait(false);
-        }
-
        
         static async Task SendUsingMultipleSendersCreatedWithConnectionString(string connectionString, int numberOfSenders, int totalNumberOfMessages)
         {
