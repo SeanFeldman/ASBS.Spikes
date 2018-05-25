@@ -11,7 +11,7 @@
 
     public class SendingMessages
     {
-        const string queuePath = "test-non-partitioned"; //"test-partitioned"
+        const string queuePath = "queue";
         static readonly Message TestMessage1K = Create1KMessage();
 
         public static async Task Main()
@@ -20,17 +20,19 @@
             
             var numberOfMessages = 10000;
 
-            Console.WriteLine($"Sending {numberOfMessages} messages");
+            Console.WriteLine($"Sending {numberOfMessages} messages\n");
+            
+            var sendersToUse = new[] {1, 2, 3, 4, 5, 8, 10};
 
-            for (var iterations = 0; iterations < 10; iterations++)
+            foreach (var senderQuantity in sendersToUse)
             {
-                Console.WriteLine($"Run #{iterations+1}");
+                for (var iterations = 0; iterations < 10; iterations++)
+                {
+                    Console.WriteLine($"--- Run #{iterations+1}, {senderQuantity} senders ---");
 
-                await SendUsingMultipleSendersCreatedWithConnectionString(connectionString, numberOfSenders:10, totalNumberOfMessages:numberOfMessages);
+                    await SendUsingMultipleSendersCreatedWithConnectionString(connectionString, numberOfSenders:senderQuantity, totalNumberOfMessages:numberOfMessages);
+                }
             }
-
-            //~not really needed anymore
-            //~await SendUsingMultipleSendersSharingConnection(connectionString, numberOfSenders:2, totalNumberOfMessages:numberOfMessages);
 
             Console.WriteLine("All done. Press Enter to exit.");
             Console.ReadLine();
@@ -54,35 +56,9 @@
 
             stopwatch.Stop();
 
-            Console.WriteLine($"Elapsed time {stopwatch.Elapsed.TotalMilliseconds} msec");
-            Console.WriteLine($"Throughput: {totalNumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
-
-            await WaitForAnyKey().ConfigureAwait(false);
-
-            await CloseSenders(senders).ConfigureAwait(false);
-        }
-
-        static async Task SendUsingMultipleSendersSharingConnection(string connectionString, int numberOfSenders, int totalNumberOfMessages)
-        {
-            var connection = new ServiceBusConnection(connectionString);
-
-            var senders = new MessageSender[numberOfSenders];
-
-            for (var i = 0; i < numberOfSenders; i++)
-            {
-                senders[i] = new MessageSender(connection, queuePath);
-            }
-
-            var numberOfMessagesToSend = totalNumberOfMessages / numberOfSenders;
-
-            var stopwatch = Stopwatch.StartNew();
-
-            await Task.WhenAll(senders.Select(sender => SendMessages(sender, numberOfMessagesToSend))).ConfigureAwait(false);
-
-            stopwatch.Stop();
-
-            Console.WriteLine($"Elapsed time {stopwatch.Elapsed.TotalMilliseconds} msec");
-            Console.WriteLine($"Throughput: {totalNumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds} msg/s");
+            Console.WriteLine($"Time:       {Math.Floor(stopwatch.Elapsed.TotalMilliseconds)} msec");
+            Console.WriteLine($"Throughput: {Math.Floor(totalNumberOfMessages * 1.0 / stopwatch.Elapsed.TotalSeconds)} msg/s");
+            Console.WriteLine();
 
             await WaitForAnyKey().ConfigureAwait(false);
 
