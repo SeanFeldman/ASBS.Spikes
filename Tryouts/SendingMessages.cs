@@ -16,8 +16,8 @@
 
         public static async Task Main()
         {
-            var connectionString = Environment.GetEnvironmentVariable("AzureServiceBus.ConnectionString");
-            
+            var connectionString = Environment.GetEnvironmentVariable("AzureServiceBus.ConnectionString", EnvironmentVariableTarget.Machine);
+            Console.WriteLine(connectionString);
             var numberOfMessages = 10000;
 
             Console.WriteLine($"Sending {numberOfMessages} messages\n");
