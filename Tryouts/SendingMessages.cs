@@ -45,7 +45,8 @@
 
             for (var i = 0; i < numberOfSenders; i++)
             {
-                senders[i] = new MessageSender(connectionString, $"{queuePath}-{i}");
+//                senders[i] = new MessageSender(connectionString, $"{queuePath}-{i}");
+                senders[i] = new MessageSender(connectionString, $"{queuePath}");
             }
 
             var numberOfMessagesToSend = totalNumberOfMessages / numberOfSenders;
