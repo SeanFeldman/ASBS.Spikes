@@ -71,7 +71,10 @@
             var content = $"message {DateTime.Now:s} ";
             var paddedContent = content.PadRight(1024, 'x');
 
-            return new Message(Encoding.UTF8.GetBytes(paddedContent));
+            return new Message(Encoding.UTF8.GetBytes(paddedContent))
+            {
+                TimeToLive = TimeSpan.FromMinutes(5)
+            };
         }
 
         static Task SendMessages(MessageSender sender, int numberOfMessages = 1000)
