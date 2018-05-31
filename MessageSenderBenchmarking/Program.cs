@@ -38,6 +38,12 @@ namespace MessageSenderBenchmarking
 
 
         [Benchmark]
+        public MessageSender CreateMessageSender()
+        {
+            return new MessageSender(connection, "queue-0");
+        }
+
+        [Benchmark]
         public async Task CreateAndDisposeMessageSender()
         {
             var sender = new MessageSender(connection, "queue-0");
